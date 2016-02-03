@@ -82,6 +82,7 @@ job_attribute do
       :excluded_users,
       :skip_tag,
       :remote_url,
+      :remote_credentials_id,
       :excluded_regions,
       :included_regions
     ]
@@ -116,6 +117,7 @@ job_attribute do
             name params[:remote_name] if params[:remote_name]
             refspec params[:refspec] if params[:refspec]
             url params[:remote_url] if params[:remote_url]
+            credentialsId params[:remote_credentials_id] if params[:remote_credentials_id]
           end
         end
       end
@@ -137,6 +139,7 @@ job_attribute do
       :refspec,
       :remote_name,
       :remote_url,
+      :remote_credentials_id,
       :skip_tag,
       :wipe_workspace
     ]
@@ -160,7 +163,7 @@ job_attribute do
           name params[:remote_name] if params[:remote_name]
           refspec params[:refspec] if params[:refspec]
           url params[:remote_url] if params[:remote_url]
-          credentialsId params[:credentials_id] if params[:credentials_id]
+          credentialsId params[:remote_credentials_id] if params[:remote_credentials_id]
         end
       end
       doGenerateSubmoduleConfigurations false

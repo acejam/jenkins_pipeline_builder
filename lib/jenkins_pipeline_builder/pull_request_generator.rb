@@ -26,11 +26,16 @@ module JenkinsPipelineBuilder
 
     def initialize(defaults = {})
       @application_name = defaults[:application_name] || fail('Please set "application_name" in your project!')
-      @open_prs = active_prs defaults[:github_site], defaults[:git_org], defaults[:git_repo_name]
+      @open_prs = active_prs defaults[:git_url], defaults[:git_org], defaults[:git_repo]
     end
 
     def convert!(job_collection, pr)
-      job_collection.defaults[:value][:application_name] = "#{application_name}-PR#{pr}"
+      if pr.class == Hash
+        name = "#{application_name}-PR#{pr[:id]}"
+      else
+        name = "#{application_name}-PR#{pr}"
+      end
+      job_collection.defaults[:value][:application_name] = name
       job_collection.jobs.each { |j| override j[:value], pr }
     end
 
@@ -47,25 +52,57 @@ module JenkinsPipelineBuilder
 
     def override(job, pr)
       git_version = JenkinsPipelineBuilder.registry.registry[:job][:scm_params].installed_version
-      job[:scm_branch] = "origin/pr/#{pr}/head"
+      if pr.class == Hash
+        scm_branch = pr[:branch]
+        refspec = ''
+        branch = pr[:branch]
+      else
+        scm_branch = "origin/pr/#{pr}/head"
+        refspec = "refs/pull/#{pr}/head:refs/remotes/origin/pr/#{pr}/head"
+        branch = "pr/#{pr}/head"
+      end
+      job[:scm_branch] = scm_branch
       job[:scm_params] ||= {}
-      job[:scm_params][:refspec] = "refs/pull/#{pr}/head:refs/remotes/origin/pr/#{pr}/head"
+      job[:scm_params][:refspec] = refspec
       job[:scm_params][:changelog_to_branch] ||= {}
       job[:scm_params][:changelog_to_branch]
-        .merge!(remote: 'origin', branch: "pr/#{pr}/head") if Gem::Version.new(2.0) < git_version
+        .merge!(remote: 'origin', branch: branch) if Gem::Version.new(2.0) < git_version
     end
 
     def active_prs(git_url, git_org, git_repo)
-      (git_url && git_org && git_repo) || fail('Please set github_site, git_org and git_repo_name in your project.')
-      # Build the Git URL
-      url = "#{git_url}/api/v3/repos/#{git_org}/#{git_repo}/pulls"
-      # Download the JSON Data from the API
-      begin
-        resp = Net::HTTP.get_response(URI.parse(url))
-        pulls = JSON.parse(resp.body)
-        pulls.map { |p| p['number'] }
-      rescue StandardError
-        raise 'Failed connecting to github!'
+      (git_url && git_org && git_repo) || fail('Please set git_url, git_org and git_repo in your project.')
+      if git_url =~ /github.com/
+        uri = URI(git_url)
+        url = "#{uri.scheme}://api.#{uri.host}/repos/#{git_org}/#{git_repo}/pulls"
+        begin
+          resp = Net::HTTP.get_response(URI.parse(url))
+          pulls = JSON.parse(resp.body)
+          pulls.map { |p| p['number'] }
+        rescue StandardError
+          raise 'Failed connecting to GitHub!'
+        end
+      elsif git_url =~ /bitbucket.org/
+        uri = URI.parse("#{git_url}/api/2.0/repositories/#{git_org}/#{git_repo}/pullrequests/")
+        begin
+          http = Net::HTTP.new(uri.host, uri.port)
+          uri.scheme == 'https' ? http.use_ssl = true : nil
+          request = Net::HTTP::Get.new(uri.request_uri)
+          request.basic_auth(ENV['BITBUCKET_USER'], ENV['BITBUCKET_PASSWORD'])
+          response = http.request(request)
+          pulls = JSON.parse(response.body)['values']
+          pulls.map { |p| {id:p['id'], branch: p['source']['branch']['name']} }
+        rescue StandardError
+          raise 'Failed connecting to Bitbucket!'
+        end
+      else
+        url = "#{git_url}/api/v3/repos/#{git_org}/#{git_repo}/pulls"
+        begin
+          resp = Net::HTTP.get_response(URI.parse(url))
+          pulls = JSON.parse(resp.body)
+          pulls.map { |p| p['number'] }
+        rescue StandardError
+          raise 'Failed connecting to GitHub Enterprise!'
+        end
       end
     end
   end
