@@ -43,7 +43,12 @@ module JenkinsPipelineBuilder
       return if JenkinsPipelineBuilder.debug
       jobs_to_delete = JenkinsPipelineBuilder.client.job.list "^#{application_name}-PR(\\d+)-(.*)$"
       open_prs.each do |n|
-        jobs_to_delete.reject! { |j| j.start_with? "#{application_name}-PR#{n}" }
+        if n.class == Hash
+          name = "#{application_name}-PR#{n[:id]}"
+        else
+          name = "#{application_name}-PR#{n}"
+        end
+        jobs_to_delete.reject! { |j| j.start_with? name }
       end
       jobs_to_delete.each { |j| JenkinsPipelineBuilder.client.job.delete j }
     end
