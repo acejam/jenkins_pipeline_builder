@@ -113,7 +113,7 @@ module JenkinsPipelineBuilder
         'statusFilter' => '',
         'columns' => get_columns(params[:type])
       }
-      json.merge!('groupingRules' => params[:groupingRules]) if params[:groupingRules]
+      json.merge!('categorizationCriteria' => {'groupRegex' => params[:groupingRules][:groupRegex], 'namingRule' => params[:groupingRules][:namingRule], 'stapler-class' => 'org.jenkinsci.plugins.categorizedview.GroupingRule', '$class' => 'org.jenkinsci.plugins.categorizedview.GroupingRule'}) if params[:groupingRules]
 
       {
         'name' => params[:name],

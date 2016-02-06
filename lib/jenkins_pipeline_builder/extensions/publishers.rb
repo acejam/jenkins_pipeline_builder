@@ -111,6 +111,40 @@ publisher do
 end
 
 publisher do
+  name :slack
+  plugin_id 'slack'
+  description 'This plugin allows your team to setup build notifications to be sent to Slack channels.'
+  jenkins_name 'Slack Notifications'
+  announced false
+
+  xml do |params|
+    send('jenkins.plugins.slack.SlackNotifier') do
+      teamDomain params[:teamDomain] || ''
+      authToken params[:token] || ''
+      buildServerUrl params[:buildServerUrl] || ''
+      room params[:room] || ''
+    end
+  end
+end
+
+publisher do
+  name :bitbucket
+  plugin_id 'bitbucket-build-status-notifier'
+  description 'This plugin will notify Bitbucket about Jenkins build events.'
+  jenkins_name 'Bitbucket notify build status'
+  announced false
+
+  xml do |params|
+    send('org.jenkinsci.plugins.bitbucket.BitbucketBuildStatusNotifier') do
+      apiKey params[:apiKey] || ''
+      apiSecret params[:apiSecret] || ''
+      notifyStart params[:notifyStart] || true
+      notifyFinish params[:notifyFinish] || true
+    end
+  end
+end
+
+publisher do
   name :git
   plugin_id 'git'
   description 'This plugin allows use of Git as a build SCM. A recent Git runtime is required (1.7.9 minimum, 1.8.x recommended). Plugin is only tested on official git client. Use exotic installations at your own risks.'

@@ -235,6 +235,36 @@ job_attribute do
 end
 
 job_attribute do
+  name :slack
+  plugin_id 'slack'
+  description 'This plugin allows your team to setup build notifications to be sent to Slack channels.'
+  jenkins_name 'Slack Notifications'
+  announced false
+
+  xml path: '//properties' do |params|
+    fail 'No Slack channel specified' unless params[:room]
+
+    send('jenkins.plugins.slack.SlackNotifier_-SlackJobProperty') do
+      teamDomain params[:teamDomain] if params[:teamDomain]
+      token params[:token] if params[:token]
+      room params[:room] if params[:room]
+      startNotification params[:startNotification] || true
+      notifySuccess params[:notifySuccess] || true
+      notifyAborted params[:notifyAborted] || true
+      notifyNotBuilt params[:notifyNotBuilt] || false
+      notifyUnstable params[:notifyUnstable] || true
+      notifyFailure params[:notifyFailure] || true
+      notifyBackToNormal params[:notifyBackToNormal] || true
+      notifyRepeatedFailure params[:notifyRepeatedFailure] || false
+      includeTestSummary params[:includeTestSummary] || false
+      showCommitList params[:showCommitList] || false
+      includeCustomMessage params[:includeCustomMessage] || false
+      customMessage params[:customMessage] if params[:customMessage]
+    end
+  end
+end
+
+job_attribute do
   name :priority
   plugin_id 'PrioritySorter'
   description 'This plugin adds the ability to assign different priorities to Jobs, the lower priority the job has the sooner the Job will run.'
