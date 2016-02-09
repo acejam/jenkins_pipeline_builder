@@ -32,10 +32,13 @@ module JenkinsPipelineBuilder
     def convert!(job_collection, pr)
       if pr.class == Hash
         name = "#{application_name}-PR#{pr[:id]}"
+        pr_number = pr[:id]
       else
         name = "#{application_name}-PR#{pr}"
+        pr_number = pr
       end
       job_collection.defaults[:value][:application_name] = name
+      job_collection.defaults[:value][:pull_request_number] = pr_number.to_s
       job_collection.jobs.each { |j| override j[:value], pr }
     end
 
